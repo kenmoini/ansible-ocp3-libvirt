@@ -3,7 +3,8 @@
 # generate_ssh_key: true/false, will generate unique key pair if true
 generate_ssh_key: true
 # ssh_pub_key_path: If 'generate_ssh_key' is false, point to an existing SSH Public Key
-ssh_pub_key_path: "~/.ssh/id_rsa.pub"
+#ssh_pub_key_path: "~/.ssh/id_rsa.pub"
+#ssh_priv_key_path: "~/.ssh/id_rsa"
 
 # This API token is used to automatically download the RHEL 7 ISO - https://access.redhat.com/management/api
 rh_offline_api_token: "eyJhb..."
@@ -15,30 +16,27 @@ rhsm_subscription_pools:
   - aSubscriptionPoolID
   - maybeAnotherSubscriptionPoolID
 
-## RH Registry Information
-rhreg_username: 1010101|somename
-rhreg_token: someLongString
-
 ## RHEL User information
 rootPassword: someSecureString
 user_name: ocpthree
 user_password: someSecureString
+
+## RH Registry Information
+rhreg_username: 1010101|somename
+rhreg_token: someLongString
+
+## OCP HTPasswd Users
+htpasswd_users:
+  - name: admin
+    password: somePassw0rd
+    cluster_roles:
+      - cluster-admin
 
 # cluster_name and cluster_domain will form the cluster base endpoint, eg cluster_name.cluster_domain
 # Ensure the DNS A records for {api,api-int,apps,*.apps}.cluster_name.cluster_domain exist
 cluster_name: ocp3
 cluster_domain: kemo.labs
 
-################################################## Cluster Networking
-# cluster_api_vip: an IP or "auto"
-cluster_api_vip: 192.168.42.74
-# cluster_load_balancer_vip: an IP or "auto"
-cluster_load_balancer_vip: 192.168.42.75
-
-################################################## Cluster Node IPAM
-# cluster_node_network_ipam: dhcp or static
-cluster_node_network_ipam: static
-######################### If cluster_node_network_ipam == static:
 cluster_node_network_static_dns_servers:
   - 192.168.42.9
   - 192.168.42.10
