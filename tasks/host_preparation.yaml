@@ -59,3 +59,8 @@
   register: wait_result
   retries: 3
   until: wait_result is succeeded
+
+- name: Set up extra PATH
+  shell: |
+    echo "PATH=$PATH:/usr/local/bin" >> /etc/profile.d/ose-bin.sh
+    chmod +x /etc/profile.d/ose-bin.sh

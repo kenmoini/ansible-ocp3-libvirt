@@ -1,0 +1,14 @@
+---
+- name: Add Roles to user
+  shell: "oc adm policy add-role-to-user {{ rl }} {{ usr.name }}"
+  loop: "{{ usr.roles }}"
+  loop_control:
+    loop_var: rl
+  when: usr.roles is defined
+
+- name: Add ClusterRoles to user
+  shell: "oc adm policy add-cluster-role-to-user {{ cstr_rl }} {{ usr.name }}"
+  loop: "{{ usr.cluster_roles }}"
+  loop_control:
+    loop_var: cstr_rl
+  when: usr.cluster_roles is defined
