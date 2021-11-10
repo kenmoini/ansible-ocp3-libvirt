@@ -60,9 +60,13 @@
         loop_control:
           loop_var: node
         when: (node.pci_devices is defined) and ((cluster_name+'-'+node.name) not in all_vms_cmd.stdout_lines)
+        tags:
+          - detach_devices
 
       - name: Create VMs via Libvirt
         include_tasks: tasks/libvirt_create_vms.yaml
+        tags:
+          - create_vms
       become: yes
       tags:
         - create_libvirt_cluster
@@ -97,6 +101,8 @@
           task_shutdown_vms: "{{ shutdown_vms }}"
         when: vm_names|length > 0
       become: yes
+      tags:
+        - reboot_vms
 
     - name: Add hosts - provided keys
       block:
@@ -109,7 +115,7 @@
           - ose
           ansible_user: "{{ user_name }}"
           ansible_connection: ssh
-          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
           ansible_ssh_private_key_file: "{{ ssh_priv_key_path }}"
         loop: "{{ cluster_nodes }}"
         loop_control:
@@ -125,7 +131,7 @@
           - ose
           ansible_user: "{{ user_name }}"
           ansible_connection: ssh
-          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
           ansible_ssh_private_key_file: "{{ ssh_priv_key_path }}"
         loop: "{{ cluster_nodes }}"
         loop_control:
@@ -141,8 +147,9 @@
           - ose
           ansible_user: "{{ user_name }}"
           ansible_connection: ssh
-          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
           ansible_ssh_private_key_file: "{{ ssh_priv_key_path }}"
+          ssh_priv_key_path: "{{ ssh_priv_key_path }}"
         loop: "{{ cluster_nodes }}"
         loop_control:
           loop_var: node
@@ -177,10 +184,20 @@
           - 'yaml'
           - 'yml'
 
+    - name: Copy over Private SSH key to the LB Node to run OSE Install
+      ansible.builtin.copy:
+        src: "{{ ssh_priv_key_path }}"
+        dest: "/home/{{ user_name }}/.ssh/ose_id_rsa"
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: 0600
+
     - name: Template the inventory file
       template:
         src: templates/ose_inventory.j2
-        dest: /etc/ansible/hosts
+        dest: "/home/{{ user_name }}/ose_hosts"
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
 
     - name: Install needed packages
       yum:
