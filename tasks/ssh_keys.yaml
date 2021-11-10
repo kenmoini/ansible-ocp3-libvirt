@@ -8,7 +8,7 @@
         ssh_public_key: "{{ lookup('file', generated_asset_directory+'/'+cluster_name+'/id_rsa.pub') }}"
         ssh_private_key: "{{ lookup('file', generated_asset_directory+'/'+cluster_name+'/id_rsa') }}"
         ssh_pub_key_path: "{{ generated_asset_directory+'/'+cluster_name+'/id_rsa.pub' }}"
-        ssh_priv_key_path: "{{ generated_asset_directory+'/'+cluster_name+'/id_rsa' }}"
+        ssh_priv_key_path: "{{ generated_asset_directory + '/' + cluster_name + '/id_rsa' }}"
       no_log: true
   when: generate_ssh_key|bool
 
