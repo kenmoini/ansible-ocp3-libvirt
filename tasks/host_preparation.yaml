@@ -1,8 +1,10 @@
 ---
 - name: Wait for SSH to come up
   wait_for_connection:
-    delay: 10
-    timeout: 360
+    connect_timeout: 20
+    sleep: 5
+    delay: 5
+    timeout: 300
 
 - name: Register to RHSM with username and password
   community.general.redhat_subscription:
@@ -11,20 +13,27 @@
     password: "{{ rhsm_password }}"
     auto_attach: false
     pool_ids: "{{ rhsm_subscription_pools }}"
+  tags:
+    - rhsm_registration
 
-- name: Disable all repos
-  community.general.rhsm_repository:
-    name: '*'
-    state: disabled
+- name: Set repos
+  block:
+  - name: Disable all repos
+    community.general.rhsm_repository:
+      name: '*'
+      state: disabled
 
-- name: Enable specific repos
-  community.general.rhsm_repository:
-    name: "{{ needed_rhel7_repos }}"
-    state: enabled
+  - name: Enable specific repos
+    community.general.rhsm_repository:
+      name: "{{ needed_rhel7_repos }}"
+      state: enabled
+  tags:
+    - rhsm_repos
 
-- name: Ensure SELinux is enabled
+- name: Ensure SELinux is set to enforcing
   selinux:
-    state: enabled
+    policy: targeted
+    state: enforcing
 
 - name: Update system packages
   yum:
