@@ -1,0 +1,52 @@
+---
+- name: Template Libvirt VM XML files for debug purposes
+  template:
+    src: templates/kvm_libvirt_vm.xml.j2
+    dest: "{{ generated_asset_directory }}/{{ cluster_name }}/kvm_vm.{{ item.name }}.xml"
+  loop: "{{ cluster_nodes }}"
+  loop_control:
+    label: "{{ item.name }}"
+  tags:
+    - template_vm_xml
+
+- name: Template Kickstart files
+  template:
+    src: templates/kickstart.cfg.j2
+    dest: "{{ generated_asset_directory }}/{{ cluster_name }}/kickstart.{{ item.name }}.cfg"
+  loop: "{{ cluster_nodes }}"
+  loop_control:
+    label: "{{ item.name }}"
+  tags:
+    - template_vm_kickstart
+
+- name: Create OpenShift VMs on Libvirt Host via virt-install and kickstart
+  shell: |
+    virt-install -v --memballoon none --cpu host-passthrough --autostart --noautoconsole --virt-type kvm --features kvm_hidden=on --controller type=scsi,model=virtio-scsi --location {{ libvirt_base_iso_path }}/rhel7-{{ cluster_name }}.iso --os-type linux --os-variant=rhel7.9 --events on_reboot=restart --network {{libvirt_network.type}}={{libvirt_network.name}},model={{libvirt_network.model}} --graphics vnc,listen=0.0.0.0,tlsport=,defaultMode='insecure' --mac="{{ item.interfaces[0].mac_address }}" --name={{ cluster_name }}-{{ item.name }} --vcpus "sockets={{ item.vm.cpu_sockets }},cores={{ item.vm.cpu_cores }},threads={{ item.vm.cpu_threads }}" --memory="{{ item.vm.memory }}" --disk "size={{ item.vm.disk_size }},path={{ libvirt_base_vm_path }}/{{ cluster_name }}-{{ item.name }}.qcow2,cache=none,format=qcow2" --console pty,target_type=serial --initrd-inject {{ generated_asset_directory }}/{{ cluster_name }}/kickstart.{{ item.name }}.cfg --extra-args "inst.ks=file://kickstart.{{ item.name }}.cfg console=tty0 console=ttyS0,115200n8"
+  loop: "{{ cluster_nodes }}"
+  loop_control:
+    label: "{{ item.name }}"
+  tags:
+    - create_libvirt_vms
+  when: (cluster_name+'-'+item.name) not in all_vms_cmd.stdout_lines
+
+#- name: Create OpenShift VMs on Libvirt Host
+#  community.libvirt.virt:
+#    command: define
+#    xml: "{{ lookup('template', 'templates/kvm_libvirt_vm.xml.j2') }}"
+#    uri: "{{ libvirt_uri }}"
+#  loop: "{{ cluster_nodes }}"
+#  loop_control:
+#    label: "{{ item.name }}"
+#  tags:
+#    - create_libvirt_vms
+#
+#- name: Boot the OpenShift VMs
+#  community.libvirt.virt:
+#    name: "{{ cluster_name }}-{{ item.name }}"
+#    state: running
+#    uri: "{{ libvirt_uri }}"
+#  loop: "{{ cluster_nodes }}"
+#  loop_control:
+#    label: "{{ item.name }}"
+#  tags:
+#    - boot_libvirt_vms

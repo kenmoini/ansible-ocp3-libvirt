@@ -14,14 +14,20 @@
 
     - name: Preflight Checks
       include_tasks: tasks/preflight.yaml
+      tags:
+        - preflight
 
     - name: Create Cluster Asset Generation Directory
       file:
         path: "{{ generated_asset_directory }}/{{ cluster_name }}"
         state: directory
+      tags:
+        - preflight
 
     - name: SSH Key Generation & Reading
       include_tasks: tasks/ssh_keys.yaml
+      tags:
+        - setup_ssh
 
     - name: RH API Setup
       include_tasks: tasks/rh_api_setup.yaml
@@ -29,9 +35,149 @@
         - rh_api_setup
 
     - name: Download RHEL 7 ISO
-      include_tasks: tasks/download_rhel_iso.yaml
+      block:
+        - name: Download and copy RHEL ISO where it is needed
+          include_tasks: tasks/download_rhel_iso.yaml
       tags:
         - download_rhel
+      become: yes
 
-#    - name: Create VMs
-#    - name: Connect to VMs and set preflight configuration
+    - name: Create Libvirt Infrastructure
+      block:
+      - name: Get All VMs
+        shell: "virsh list --all --name"
+        register: all_vms_cmd
+
+      - name: debug all vms
+        debug:
+          msg: "{{ all_vms_cmd.stdout_lines }}"
+      #- name: Create Disks via QEMU
+      #  include_tasks: tasks/libvirt_create_disks.yaml
+
+      - name: Detach devices from host system for VMs
+        include_tasks: tasks/libvirt_detach_devices.yaml
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: node
+        when: (node.pci_devices is defined) and ((cluster_name+'-'+node.name) not in all_vms_cmd.stdout_lines)
+
+      - name: Create VMs via Libvirt
+        include_tasks: tasks/libvirt_create_vms.yaml
+      become: yes
+      tags:
+        - create_libvirt_cluster
+
+    - name: Reboot Libvirt VMs
+      block:
+      - name: Set blank fact for VM list
+        set_fact:
+          vm_names: []
+          shutdown_vms: []
+          restarted_vms: "{{ lookup('fileglob', generated_asset_directory + '/' + cluster_name + '/.restarted-*') }}"
+
+      - name: Add VM Names to fact
+        set_fact:
+          vm_names: "{{ vm_names + [cluster_name+'-'+vm_item.name] }}"
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: vm_item
+        when: (cluster_name+'-'+vm_item.name) not in restarted_vms
+
+      - name: Wait 10m for the VMs to install
+        pause:
+          minutes: 10
+        when: vm_names|length > 0
+        
+      - name: Check for Libvirt VM Rebooting
+        include_tasks: tasks/libvirt_reboot_vms.yaml
+        vars:
+          task_vm_names: "{{ vm_names }}"
+          task_shutdown_vms: "{{ shutdown_vms }}"
+        when: vm_names|length > 0
+      become: yes
+
+    - name: Add hosts - provided keys
+      block:
+      - name: Add the new OSE Control Plane Hosts to a new inventory
+        add_host:
+          hostname: "{{ node.name }}.{{ cluster_name }}"
+          ansible_ssh_host: '{{ node.interfaces[0].ipv4[0].address }}'
+          groups:
+          - osecp
+          - ose
+          ansible_user: "{{ user_name }}"
+          ansible_connection: ssh
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          ansible_ssh_private_key_file: "{{ ssh_priv_key_path }}"
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: node
+        when: node.type == "control-plane"
+
+      - name: Add the new OSE App Node Hosts to a new inventory
+        add_host:
+          hostname: "{{ node.name }}.{{ cluster_name }}"
+          ansible_ssh_host: '{{ node.interfaces[0].ipv4[0].address }}'
+          groups:
+          - osean
+          - ose
+          ansible_user: "{{ user_name }}"
+          ansible_connection: ssh
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          ansible_ssh_private_key_file: "{{ ssh_priv_key_path }}"
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: node
+        when: node.type == "application-node"
+      when: not generate_ssh_key
+
+    - name: Add hosts - generated keys
+      block:
+      - name: Add the new OSE Control Plane Hosts to a new inventory
+        add_host:
+          hostname: "{{ node.name }}.{{ cluster_name }}"
+          ansible_ssh_host: '{{ node.interfaces[0].ipv4[0].address }}'
+          groups:
+          - osecp
+          - ose
+          ansible_user: "{{ user_name }}"
+          ansible_connection: ssh
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          ansible_ssh_private_key_file: "{{ generated_asset_directory + '/' + cluster_name + '/id_rsa' }}"
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: node
+        when: node.type == "control-plane"
+
+      - name: Add the new OSE App Node Hosts to a new inventory
+        add_host:
+          hostname: "{{ node.name }}.{{ cluster_name }}"
+          ansible_ssh_host: '{{ node.interfaces[0].ipv4[0].address }}'
+          groups:
+          - osean
+          - ose
+          ansible_user: "{{ user_name }}"
+          ansible_connection: ssh
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+          ansible_ssh_private_key_file: "{{ generated_asset_directory + '/' + cluster_name + '/id_rsa' }}"
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: node
+        when: node.type == "application-node"
+      when: generate_ssh_key
+
+- name: Baseline configure all OSE hosts
+  hosts: ose
+  become: yes
+  gather_facts: false
+  tasks:
+
+    - name: Read in variables
+      include_vars:
+        dir: vars
+        extensions:
+          - 'yaml'
+          - 'yml'
+  
+    - name: Connect to VMs and set preflight configuration
+      include_tasks: tasks/host_preparation.yaml

@@ -13,7 +13,13 @@
         dest: "{{ generated_asset_directory }}/{{ cluster_name }}/rhel7.iso"
       when: not iso_check.stat.exists
 
+    - name: Check for existing ISO at target path
+      ansible.builtin.stat:
+        path: "{{ libvirt_base_iso_path }}/rhel7-{{ cluster_name }}.iso"
+      register: target_iso_check
+
     - name: Copy RHEL ISO to target Libvirt path
       copy:
         src: "{{ generated_asset_directory }}/{{ cluster_name }}/rhel7.iso"
         dest: "{{ libvirt_base_iso_path }}/rhel7-{{ cluster_name }}.iso"
+      when: not target_iso_check.stat.exists
