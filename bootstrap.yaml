@@ -87,6 +87,8 @@
         pause:
           minutes: 10
         when: vm_names|length > 0
+        tags:
+          - wait_for_vm_install
         
       - name: Check for Libvirt VM Rebooting
         include_tasks: tasks/libvirt_reboot_vms.yaml
