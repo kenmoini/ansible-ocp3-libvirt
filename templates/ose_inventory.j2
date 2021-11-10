@@ -1,4 +1,4 @@
-Create an OSEv3 group that contains the master, nodes, etcd, and lb groups.
+# Create an OSEv3 group that contains the master, nodes, etcd, and lb groups.
 # The lb group lets Ansible configure HAProxy as the load balancing solution.
 # Comment lb out if your load balancer is pre-configured.
 [OSEv3:children]
@@ -13,7 +13,7 @@ ansible_ssh_user={{ user_name }}
 ansible_become=true
 ansible_connection=ssh
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-ansible_ssh_private_key_file="{{ ssh_priv_key_path }}"
+ansible_ssh_private_key_file="/home/{{ user_name }}/.ssh/ose_id_rsa"
 openshift_deployment_type=openshift-enterprise
 
 # uncomment the following to enable htpasswd authentication; defaults to DenyAllPasswordIdentityProvider
