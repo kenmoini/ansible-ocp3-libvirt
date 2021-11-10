@@ -1,0 +1,69 @@
+Create an OSEv3 group that contains the master, nodes, etcd, and lb groups.
+# The lb group lets Ansible configure HAProxy as the load balancing solution.
+# Comment lb out if your load balancer is pre-configured.
+[OSEv3:children]
+masters
+nodes
+etcd
+lb
+
+# Set variables common for all OSEv3 hosts
+[OSEv3:vars]
+ansible_ssh_user={{ user_name }}
+ansible_become=true
+ansible_connection=ssh
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+ansible_ssh_private_key_file="{{ ssh_priv_key_path }}"
+openshift_deployment_type=openshift-enterprise
+
+# uncomment the following to enable htpasswd authentication; defaults to DenyAllPasswordIdentityProvider
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
+
+# Native high availability cluster method with optional load balancer.
+# If no lb group is defined installer assumes that a load balancer has
+# been preconfigured. For installation the value of
+# openshift_master_cluster_hostname must resolve to the load balancer
+# or to one or all of the masters defined in the inventory if no load
+# balancer is present.
+openshift_master_cluster_method=native
+openshift_master_cluster_hostname=api.{{ cluster_name }}.{{ cluster_domain }}
+openshift_master_cluster_public_hostname=api.{{ cluster_name }}.{{ cluster_domain }}
+openshift_master_default_subdomain=apps.{{ cluster_name }}.{{ cluster_domain }}
+
+# host group for masters
+[masters]
+{% for node in cluster_nodes %}
+{% if node.type == "control-plane" %}
+{{ node.name }}.{{ cluster_name }}.{{ cluster_domain }}
+{% endif %}
+{% endfor %}
+
+# host group for etcd
+[etcd]
+{% for node in cluster_nodes %}
+{% if node.type == "control-plane" %}
+{{ node.name }}.{{ cluster_name }}.{{ cluster_domain }}
+{% endif %}
+{% endfor %}
+
+# Specify load balancer host
+[lb]
+{% for node in cluster_nodes %}
+{% if node.type == "load-balancer" %}
+{{ node.name }}.{{ cluster_name }}.{{ cluster_domain }}
+{% endif %}
+{% endfor %}
+
+# host group for nodes, includes region info
+[nodes]
+{% for node in cluster_nodes %}
+{% if node.type == "control-plane" %}
+{{ node.name }}.{{ cluster_name }}.{{ cluster_domain }} openshift_node_group_name='node-config-master'
+{% endif %}
+{% if node.type == "application-node" %}
+{{ node.name }}.{{ cluster_name }}.{{ cluster_domain }} openshift_node_group_name='node-config-compute'
+{% endif %}
+{% if node.type == "infrastructure-node" %}
+{{ node.name }}.{{ cluster_name }}.{{ cluster_domain }} openshift_node_group_name='node-config-infra'
+{% endif %}
+{% endfor %}
