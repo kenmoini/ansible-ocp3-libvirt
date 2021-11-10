@@ -7,8 +7,8 @@
 - name: Register to RHSM with username and password
   community.general.redhat_subscription:
     state: present
-    username: joe_user
-    password: somepass
+    username: "{{ rhsm_username }}"
+    password: "{{ rhsm_password }}"
     auto_attach: false
     pool_ids: "{{ rhsm_subscription_pools }}"
 
