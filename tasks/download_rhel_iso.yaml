@@ -1,0 +1,19 @@
+---
+- name: Download ISO if needed
+  block:
+    - name: Check for existing ISO
+      ansible.builtin.stat:
+        path: "{{ generated_asset_directory }}/{{ cluster_name }}/rhel7.iso"
+      register: iso_check
+
+    - name: Pull RHEL ISO if needed
+      get_url:
+        url: "https://api.access.redhat.com/management/v1/images/{{ rhel_sha_sum }}/download"
+        headers: "{{ compiled_uri_headers }}"
+        dest: "{{ generated_asset_directory }}/{{ cluster_name }}/rhel7.iso"
+      when: not iso_check.stat.exists
+
+    - name: Copy RHEL ISO to target Libvirt path
+      copy:
+        src: "{{ generated_asset_directory }}/{{ cluster_name }}/rhel7.iso"
+        dest: "{{ libvirt_base_iso_path }}/rhel7-{{ cluster_name }}.iso"

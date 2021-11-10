@@ -1,0 +1,37 @@
+---
+- name: Deploy OpenShift 3.11 to Libvirt/KVM
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Read in variables
+      include_vars:
+        dir: vars
+        extensions:
+          - 'yaml'
+          - 'yml'
+
+    - name: Preflight Checks
+      include_tasks: tasks/preflight.yaml
+
+    - name: Create Cluster Asset Generation Directory
+      file:
+        path: "{{ generated_asset_directory }}/{{ cluster_name }}"
+        state: directory
+
+    - name: SSH Key Generation & Reading
+      include_tasks: tasks/ssh_keys.yaml
+
+    - name: RH API Setup
+      include_tasks: tasks/rh_api_setup.yaml
+      tags:
+        - rh_api_setup
+
+    - name: Download RHEL 7 ISO
+      include_tasks: tasks/download_rhel_iso.yaml
+      tags:
+        - download_rhel
+
+#    - name: Create VMs
+#    - name: Connect to VMs and set preflight configuration

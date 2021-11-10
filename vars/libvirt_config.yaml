@@ -1,0 +1,18 @@
+---
+######################### Local libvirt options
+libvirt_uri: "qemu:///system"
+libvirt_network:
+  type: bridge
+  name: bridge0
+  model: virtio
+
+######################### Remote libvirt Options
+#libvirt_endpoint: raza.kemo.labs
+#libvirt_transport_type: qemu+ssh
+#libvirt_user: root
+#libvirt_options: "?no_verify=1&socket=/var/run/libvirt/libvirt-sock"
+#libvirt_uri: "{{ libvirt_transport_type }}://{{ libvirt_user }}@{{ libvirt_endpoint }}/system{{ libvirt_options }}"
+
+######################### Storage Options
+libvirt_base_iso_path: /mnt/nvme/isos
+libvirt_base_vm_path: /mnt/nvme/VMs

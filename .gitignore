@@ -1,0 +1,4 @@
+.generated/
+.generated/*
+cluster-config.yaml
+!/example_vars/cluster-config.yaml
