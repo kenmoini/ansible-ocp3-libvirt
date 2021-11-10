@@ -44,17 +44,17 @@ cluster_nodes:
   - name: lb
     type: load-balancer
     vm:
-      disk_size: 60
+      disk_size: 40
       cpu_cores: 2
       cpu_sockets: 1
       cpu_threads: 1
       memory: 8192
     interfaces:
       - name: eth0
-        mac_address: 54:52:00:42:69:10
+        mac_address: 54:52:00:42:69:70
         dhcp: false
         ipv4:
-          - address: 192.168.42.89
+          - address: 192.168.42.60
             prefix: 24
         routes:
           - destination: 0.0.0.0/0
@@ -64,17 +64,17 @@ cluster_nodes:
   - name: cp-1
     type: control-plane
     vm:
-      disk_size: 60
+      disk_size: 120
       cpu_cores: 4
       cpu_sockets: 1
       cpu_threads: 1
       memory: 16384
     interfaces:
       - name: eth0
-        mac_address: 54:52:00:42:69:11
+        mac_address: 54:52:00:42:69:71
         dhcp: false
         ipv4:
-          - address: 192.168.42.90
+          - address: 192.168.42.62
             prefix: 24
         routes:
           - destination: 0.0.0.0/0
@@ -84,17 +84,17 @@ cluster_nodes:
   - name: cp-2
     type: control-plane
     vm:
-      disk_size: 60
+      disk_size: 120
       cpu_cores: 4
       cpu_sockets: 1
       cpu_threads: 1
       memory: 16384
     interfaces:
       - name: eth0
-        mac_address: 54:52:00:42:69:12
+        mac_address: 54:52:00:42:69:72
         dhcp: false
         ipv4:
-          - address: 192.168.42.91
+          - address: 192.168.42.63
             prefix: 24
         routes:
           - destination: 0.0.0.0/0
@@ -104,17 +104,17 @@ cluster_nodes:
   - name: cp-3
     type: control-plane
     vm:
-      disk_size: 60
+      disk_size: 120
       cpu_cores: 4
       cpu_sockets: 1
       cpu_threads: 1
       memory: 16384
     interfaces:
       - name: eth0
-        mac_address: 54:52:00:42:69:13
+        mac_address: 54:52:00:42:69:73
         dhcp: false
         ipv4:
-          - address: 192.168.42.92
+          - address: 192.168.42.64
             prefix: 24
         routes:
           - destination: 0.0.0.0/0
@@ -124,17 +124,17 @@ cluster_nodes:
   - name: app-1
     type: application-node
     vm:
-      disk_size: 60
-      cpu_cores: 4
+      disk_size: 120
+      cpu_cores: 6
       cpu_sockets: 1
       cpu_threads: 1
       memory: 32768
     interfaces:
       - name: eth0
-        mac_address: 54:52:00:42:69:14
+        mac_address: 54:52:00:42:69:74
         dhcp: false
         ipv4:
-          - address: 192.168.42.93
+          - address: 192.168.42.65
             prefix: 24
         routes:
           - destination: 0.0.0.0/0
@@ -144,17 +144,17 @@ cluster_nodes:
   - name: app-2
     type: application-node
     vm:
-      disk_size: 60
-      cpu_cores: 4
+      disk_size: 120
+      cpu_cores: 6
       cpu_sockets: 1
       cpu_threads: 1
       memory: 32768
     interfaces:
       - name: eth0
-        mac_address: 54:52:00:42:69:15
+        mac_address: 54:52:00:42:69:75
         dhcp: false
         ipv4:
-          - address: 192.168.42.94
+          - address: 192.168.42.66
             prefix: 24
         routes:
           - destination: 0.0.0.0/0
@@ -164,8 +164,8 @@ cluster_nodes:
   - name: app-3
     type: application-node
     vm:
-      disk_size: 60
-      cpu_cores: 4
+      disk_size: 120
+      cpu_cores: 6
       cpu_sockets: 1
       cpu_threads: 1
       memory: 32768
@@ -177,10 +177,10 @@ cluster_nodes:
     #  - "81:00.3"
     interfaces:
       - name: eth0
-        mac_address: 54:52:00:42:69:16
+        mac_address: 54:52:00:42:69:76
         dhcp: false
         ipv4:
-          - address: 192.168.42.95
+          - address: 192.168.42.67
             prefix: 24
         routes:
           - destination: 0.0.0.0/0
