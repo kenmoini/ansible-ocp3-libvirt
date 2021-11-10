@@ -8,6 +8,18 @@ ssh_pub_key_path: "~/.ssh/id_rsa.pub"
 # This API token is used to automatically download the RHEL 7 ISO - https://access.redhat.com/management/api
 rh_offline_api_token: "eyJhb..."
 
+## RHSM Information
+rhsm_username: you@example.com
+rhsm_password: someSecureString
+rhsm_subscription_pools:
+  - aSubscriptionPoolID
+  - maybeAnotherSubscriptionPoolID
+
+## RHEL User information
+rootPassword: someSecureString
+user_name: ocpthree
+user_password: someSecureString
+
 # cluster_name and cluster_domain will form the cluster base endpoint, eg cluster_name.cluster_domain
 # Ensure the DNS A records for {api,api-int,apps,*.apps}.cluster_name.cluster_domain exist
 cluster_name: ocp3
