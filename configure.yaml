@@ -1,0 +1,160 @@
+---
+- name: Configure bare OSE 3.11 Cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Read in variables
+      include_vars:
+        dir: vars
+        extensions:
+          - 'yaml'
+          - 'yml'
+
+    - name: Preflight Checks
+      include_tasks: tasks/preflight.yaml
+      tags:
+        - preflight
+
+    - name: SSH Key Generation & Reading
+      include_tasks: tasks/ssh_keys.yaml
+      tags:
+        - setup_ssh
+
+    - name: Add hosts to new inventories
+      block:
+      - name: Add the new OSE Control Plane Hosts to a new inventory
+        add_host:
+          hostname: "{{ node.name }}.{{ cluster_name }}"
+          ansible_ssh_host: '{{ node.interfaces[0].ipv4[0].address }}'
+          groups:
+          - osecp
+          - ose
+          ansible_user: "{{ user_name }}"
+          ansible_connection: ssh
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+          ansible_ssh_private_key_file: "{{ ssh_priv_key_path }}"
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: node
+        when: node.type == "control-plane"
+
+      - name: Add the new OSE App Node Hosts to a new inventory
+        add_host:
+          hostname: "{{ node.name }}.{{ cluster_name }}"
+          ansible_ssh_host: '{{ node.interfaces[0].ipv4[0].address }}'
+          groups:
+          - osean
+          - ose
+          ansible_user: "{{ user_name }}"
+          ansible_connection: ssh
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+          ansible_ssh_private_key_file: "{{ ssh_priv_key_path }}"
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: node
+        when: node.type == "application-node"
+
+      - name: Add the new OSE LB Hosts to a new inventory
+        add_host:
+          hostname: "{{ node.name }}.{{ cluster_name }}"
+          ansible_ssh_host: '{{ node.interfaces[0].ipv4[0].address }}'
+          groups:
+          - oselb
+          - ose
+          ansible_user: "{{ user_name }}"
+          ansible_connection: ssh
+          ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+          ansible_ssh_private_key_file: "{{ ssh_priv_key_path }}"
+          ssh_priv_key_path: "{{ ssh_priv_key_path }}"
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: node
+        when: node.type == "load-balancer"
+
+- name: Configure OSE Control Plane nodes
+  hosts: osecp
+  become: yes
+  gather_facts: false
+  tasks:
+
+    - name: Read in variables
+      include_vars:
+        dir: vars
+        extensions:
+          - 'yaml'
+          - 'yml'
+  
+    - name: Set HTPasswd
+      block:
+        - name: Install httpd-tools
+          yum:
+            name: httpd-tools
+            state: latest
+
+        - name: Touch the htpasswd file
+          file:
+            path: /etc/origin/master/htpasswd
+            state: touch
+
+        - name: Add users to htpasswd file
+          shell: "htpasswd -b /etc/origin/master/htpasswd {{ usr.name }} {{ usr.password }}"
+          loop: "{{ htpasswd_users }}"
+          loop_control:
+            loop_var: usr
+
+        - name: Restart the API
+          shell: master-restart api
+
+        - name: Restart the controllers
+          shell: master-restart controllers
+
+        - name: Add cluster roles to users
+          include_tasks: tasks/add_roles_to_user.yaml
+          loop: "{{ htpasswd_users }}"
+          loop_control:
+            loop_var: usr
+      tags:
+        - set_htpasswd
+  
+
+- name: Configure OSE LB nodes
+  hosts: oselb
+  become: yes
+  gather_facts: false
+  tasks:
+
+    - name: Read in variables
+      include_vars:
+        dir: vars
+        extensions:
+          - 'yaml'
+          - 'yml'
+
+    - name: Reconfigure load balancer
+      block:
+        - name: Template the haproxy.cfg
+          template:
+            src: templates/haproxy.cfg.j2
+            dest: /etc/haproxy/haproxy.cfg
+            owner: root
+            group: root
+            backup: yes
+        
+        - name: Enable ports on iptables
+          ansible.builtin.iptables:
+            chain: OS_FIREWALL_ALLOW
+            protocol: tcp
+            destination_ports:
+              - "80"
+              - "443"
+            jump: ACCEPT
+            state: present
+
+        - name: Restart haproxy
+          service:
+            name: haproxy
+            state: restarted
+      tags:
+        - haproxy_config
