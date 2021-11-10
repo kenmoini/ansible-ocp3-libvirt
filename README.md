@@ -5,6 +5,7 @@ This repository will deploy Red Hat OpenShift 3.11 on Libvirt/KVM hosts.
 ## Prerequisites
 
 - Get a [Red Hat API Offline Token](https://access.redhat.com/management/api) - this is used to automatically download the RHEL 7 ISO, but can be skipped with the `download_rhel` tag
+- If using OSEnterprise, you'll need some RH Registry credentials: https://access.redhat.com/RegistryAuthentication
 - Install the Ansible Collections needed: `ansible-galaxy collection install -r requirements.yml`
 - Install Python + PIP3 + netaddr: `dnf install python3-pip -y && pip3 install netaddr`
 

@@ -1,5 +1,5 @@
 .generated/
-.generated/*
+.generated/**
 cluster-config.yaml
 cluster-config.yml
 !/example_vars/cluster-config.yaml
