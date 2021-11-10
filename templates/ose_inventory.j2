@@ -61,7 +61,7 @@ openshift_master_default_subdomain=apps.{{ cluster_name }}.{{ cluster_domain }}
 [nodes]
 {% for node in cluster_nodes %}
 {% if node.type == "control-plane" %}
-{{ node.name }}.{{ cluster_name }}.{{ cluster_domain }} openshift_node_group_name='node-config-master'
+{{ node.name }}.{{ cluster_name }}.{{ cluster_domain }} openshift_node_group_name='node-config-master-infra'
 {% endif %}
 {% if node.type == "application-node" %}
 {{ node.name }}.{{ cluster_name }}.{{ cluster_domain }} openshift_node_group_name='node-config-compute'
