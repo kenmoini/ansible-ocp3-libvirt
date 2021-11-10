@@ -19,5 +19,5 @@ cp example_vars/cluster-config.yaml my-cluster.cluster-config.yaml
 2. With the needed variables altered, you can run the Playbook with the following command:
 
 ```bash
-ansible-playbook -e "@my-cluster.cluster-config.yaml" bootstrap.yaml
+ansible-playbook --forks 10 -e "@my-cluster.cluster-config.yaml" bootstrap.yaml
 ```

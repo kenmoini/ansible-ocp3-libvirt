@@ -131,42 +131,22 @@
         loop_control:
           loop_var: node
         when: node.type == "application-node"
-      when: not generate_ssh_key
 
-    - name: Add hosts - generated keys
-      block:
-      - name: Add the new OSE Control Plane Hosts to a new inventory
+      - name: Add the new OSE LB Hosts to a new inventory
         add_host:
           hostname: "{{ node.name }}.{{ cluster_name }}"
           ansible_ssh_host: '{{ node.interfaces[0].ipv4[0].address }}'
           groups:
-          - osecp
+          - oselb
           - ose
           ansible_user: "{{ user_name }}"
           ansible_connection: ssh
           ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-          ansible_ssh_private_key_file: "{{ generated_asset_directory + '/' + cluster_name + '/id_rsa' }}"
+          ansible_ssh_private_key_file: "{{ ssh_priv_key_path }}"
         loop: "{{ cluster_nodes }}"
         loop_control:
           loop_var: node
-        when: node.type == "control-plane"
-
-      - name: Add the new OSE App Node Hosts to a new inventory
-        add_host:
-          hostname: "{{ node.name }}.{{ cluster_name }}"
-          ansible_ssh_host: '{{ node.interfaces[0].ipv4[0].address }}'
-          groups:
-          - osean
-          - ose
-          ansible_user: "{{ user_name }}"
-          ansible_connection: ssh
-          ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-          ansible_ssh_private_key_file: "{{ generated_asset_directory + '/' + cluster_name + '/id_rsa' }}"
-        loop: "{{ cluster_nodes }}"
-        loop_control:
-          loop_var: node
-        when: node.type == "application-node"
-      when: generate_ssh_key
+        when: node.type == "load-balancer"
 
 - name: Baseline configure all OSE hosts
   hosts: ose
@@ -183,3 +163,26 @@
   
     - name: Connect to VMs and set preflight configuration
       include_tasks: tasks/host_preparation.yaml
+
+- name: Deploy OSE from LB Node
+  hosts: oselb
+  become: yes
+  gather_facts: false
+  tasks:
+
+    - name: Read in variables
+      include_vars:
+        dir: vars
+        extensions:
+          - 'yaml'
+          - 'yml'
+
+    - name: Template the inventory file
+      template:
+        src: templates/ose_inventory.j2
+        dest: /etc/ansible/hosts
+
+    - name: Install needed packages
+      yum:
+        name: openshift-ansible
+        state: latest

@@ -54,6 +54,12 @@
           loop_var: node
         when: node.pci_devices is defined
 
+      - name: Delete the Restart touch files
+        file:
+          state: absent
+          path: "{{ generated_asset_directory }}/{{ cluster_name }}/.restart-*"
+        when: delete_generated_assets|bool
+
       - name: Delete the RHEL ISO
         file:
           state: absent
