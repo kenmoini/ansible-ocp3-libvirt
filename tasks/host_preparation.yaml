@@ -19,11 +19,8 @@
 
 - name: Enable specific repos
   community.general.rhsm_repository:
-    name: "{{ repo_item }}"
+    name: "{{ needed_rhel7_repos }}"
     state: enabled
-  loop: "{{ needed_rhel7_repos }}"
-  loop_control:
-    loop_var: repo_item
 
 - name: Ensure SELinux is enabled
   selinux:
