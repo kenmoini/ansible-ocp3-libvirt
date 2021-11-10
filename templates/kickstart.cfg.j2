@@ -1,0 +1,129 @@
+###############################################################
+# Environment setup
+###############################################################
+
+text
+cdrom
+auth --enableshadow --passalgo=sha512
+keyboard --vckeymap=us --xlayouts='us'
+lang en_US.UTF-8
+eula --agreed
+firstboot --disable
+halt
+
+###############################################################
+# network configuration
+###############################################################
+
+{% for iface in item.interfaces %}
+{% set ifaceNetMask = iface.ipv4[0].address + '/' + (iface.ipv4[0].prefix|string) %}
+network --bootproto=static --ip={{ iface.ipv4[0].address }} --gateway={{ iface.routes[0].next_hop_address }} --netmask={{ ifaceNetMask | ipaddr('netmask') }} --noipv6 --device={{ iface.name }} --nameserver={{ cluster_node_network_static_dns_servers|join(',') }} --activate
+{% endfor %}
+
+#network --bootproto=dhcp --noipv6 --onboot=on --device=eth0
+network  --hostname={{ item.name }}.{{ cluster_name }}.{{ cluster_domain }}
+
+timezone America/New_York --isUtc
+#timezone UTC
+
+###############################################################
+# partitioning
+###############################################################
+#bootloader --timeout=1 --location=mbr --append="net.ifnames=0 biosdevname=0"
+bootloader --timeout=1 --location=mbr
+text
+skipx
+zerombr
+clearpart --all --initlabel
+autopart --type=lvm --nohome
+reboot --eject
+
+###########################################################################################
+# User Accounts
+# Generate encrypted password: python -c 'import crypt; print(crypt.crypt("My Password"))'
+# Or  openssl passwd -1 password
+###########################################################################################
+
+rootpw {{ rootPassword }} 
+user --groups=wheel --name={{ user_name }} --password={{ user_password }} --gecos="OCP User"
+
+###############################################################
+# SELinux and Firewalld
+###############################################################
+
+selinux --enforcing
+#selinux --permissive
+#selinux --disabled
+ 
+# firewall --enabled --ssh
+# firewall --disabled
+
+ 
+###############################################################
+# Software Packages
+###############################################################
+
+%packages --ignoremissing --excludedocs --instLangs=en_US.utf8
+@core
+@base
+openssh-clients
+bash-completion
+sudo
+selinux-policy-devel
+nfs-utils
+net-tools
+tar
+bzip2
+yum-utils
+network-scripts
+wget
+git
+bind-utils
+iptables-services
+bridge-utils
+sos
+psacct
+%end
+
+services --enabled="sshd"
+ 
+###############################################################
+# Post-Install Scripts
+###############################################################
+
+%post --log=/root/kickstart_post.log
+echo "Creating user ssh dir..."
+mkdir -m0700 -p /home/{{ user_name }}/.ssh/
+echo "Creating user authorized_keys..."
+cat <<EOF > /home/{{ user_name }}/.ssh/authorized_keys
+{{ ssh_public_key }}
+EOF
+echo "Setting permissions..."
+chmod 0600 /home/{{ user_name }}/.ssh/authorized_keys
+chown -R {{user_name}}:{{user_name}} /home/{{ user_name }}/.ssh
+echo "Setting SELinux context..."
+restorecon -R /home/{{ user_name }}/.ssh/
+echo "Creating sudoers entry..."
+echo "{{ user_name }} ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/{{ user_name }}
+echo "Setting SELinux context..."
+restorecon -R /etc/sudoers.d/
+%end
+
+###############################################################
+#### RHSM
+################################### Moved to Ansible Automation
+
+## %post --log=/root/rhsm_results.log
+## echo "Registering with Username and Password..."
+## subscription-manager register --username={{ rhsm_username }} --password={{ rhsm_password }} 
+## echo "Refreshing data..."
+## subscription-manager refresh
+## echo "Attaching subscription pools..."
+## {% for pool in rhsm_subscription_pools %}
+## subscription-manager attach --pool={{ pool }} }}
+## {% endfor %}
+## echo "Disabling all repos..."
+## subscription-manager repos --disable="*"
+## echo "Enabling needed repos..."
+## subscription-manager repos --enable="rhel-7-server-rpms" --enable="rhel-7-server-extras-rpms" --enable="rhel-7-server-ose-3.11-rpms" --enable="rhel-7-server-ansible-2.9-rpms" --enable="rh-gluster-3-client-for-rhel-7-server-rpms"
+## %end

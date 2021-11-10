@@ -3,7 +3,7 @@
   <genid/>
   <metadata>
     <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
-      <libosinfo:os id="http://fedoraproject.org/coreos/stable"/>
+      <libosinfo:os id="http://redhat.com/rhel/7.9"/>
     </libosinfo:libosinfo>
   </metadata>
   <memory unit='MiB'>{{ item.vm.memory }}</memory>
@@ -13,7 +13,7 @@
     <partition>/machine</partition>
   </resource>
   <os>
-    <type arch='x86_64' machine='pc-q35-rhel8.4.0'>hvm</type>
+    <type arch='x86_64' machine='pc-q35-rhel8.2.0'>hvm</type>
     <boot dev='hd'/>
     <boot dev='cdrom'/>
   </os>
@@ -51,7 +51,7 @@
     </disk>
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
-      <source file='{{ libvirt_base_iso_path }}/ocp_ai-{{ cluster_id }}.iso' index='1'/>
+      <source file='{{ libvirt_base_iso_path }}/rhel7-{{ cluster_name }}.iso' index='1'/>
       <backingStore/>
       <target dev='sda' bus='sata'/>
       <readonly/>
