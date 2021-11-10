@@ -58,7 +58,9 @@
         file:
           state: absent
           path: "{{ generated_asset_directory }}/{{ cluster_name }}/.restart-*"
-        when: delete_generated_assets|bool
+        loop: "{{ cluster_nodes }}"
+        loop_control:
+          loop_var: node
 
       - name: Delete the RHEL ISO
         file:
