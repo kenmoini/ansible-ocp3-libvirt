@@ -15,6 +15,10 @@ rhsm_subscription_pools:
   - aSubscriptionPoolID
   - maybeAnotherSubscriptionPoolID
 
+## RH Registry Information
+rhreg_username: 1010101|somename
+rhreg_token: someLongString
+
 ## RHEL User information
 rootPassword: someSecureString
 user_name: ocpthree

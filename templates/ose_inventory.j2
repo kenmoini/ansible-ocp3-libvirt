@@ -15,6 +15,8 @@ ansible_connection=ssh
 ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 ansible_ssh_private_key_file="/home/{{ user_name }}/.ssh/ose_id_rsa"
 openshift_deployment_type=openshift-enterprise
+oreg_auth_user="{{ rhreg_username }}"
+oreg_auth_password="{{ rhreg_token }}"
 
 # uncomment the following to enable htpasswd authentication; defaults to DenyAllPasswordIdentityProvider
 openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider'}]
