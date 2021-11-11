@@ -16,9 +16,6 @@
           - 'yaml'
           - 'yml'
 
-    - name: Preflight Checks
-      include_tasks: tasks/preflight.yaml
-
     - name: Delete the VMs in Libvirt
       block:
       - name: Destroy all the VMs
@@ -57,7 +54,7 @@
       - name: Delete the Restart touch files
         file:
           state: absent
-          path: "{{ generated_asset_directory }}/{{ cluster_name }}/.restart-*"
+          path: "{{ generated_asset_directory }}/{{ cluster_name }}/.restarted-{{ cluster_name }}-{{ node.name }}"
         loop: "{{ cluster_nodes }}"
         loop_control:
           loop_var: node
